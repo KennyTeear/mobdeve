@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">MOBDEVEmachineproject</string>
+    <string-array name="currency_array">
+        <item>USD</item>
+        <item>EUR</item>
+        <item>GBP</item>
+        <item>JPY</item>
+        <item>AUD</item>
+        <item>CHF</item>
+        <item>NZD</item>
+        <item>CAD</item>
+        <item>ZAR</item>
+    </string-array>
+</resources>

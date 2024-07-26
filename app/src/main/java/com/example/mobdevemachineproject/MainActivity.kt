@@ -1,5 +1,7 @@
 package com.example.mobdevemachineproject
 
+import android.content.Intent
+import android.os.AsyncTask
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -7,6 +9,7 @@ import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.Spinner
@@ -19,6 +22,9 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.URL
 import android.widget.Toast
+import io.objectbox.Box
+import io.objectbox.kotlin.boxFor
+import java.net.HttpURLConnection
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,6 +36,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spinnerToCurrency: Spinner
     private lateinit var swapButton: ImageButton
     private lateinit var lastUpdatedTextView: TextView
+    private lateinit var exchangeRatesButton: Button
+
+    private lateinit var exchangeRateBox: Box<ExchangeRate>
+    private lateinit var lastUpdateBox: Box<LastUpdate>
+    private lateinit var app: App
 
     var baseCurrency = "USD"
     var convertedToCurrency = "EUR"
@@ -51,6 +62,20 @@ class MainActivity : AppCompatActivity() {
         spinnerToCurrency = findViewById(R.id.spinnerToCurrency)
         swapButton = findViewById(R.id.imageButton)
 
+        app = application as App
+        exchangeRateBox = app.boxStore.boxFor()
+        lastUpdateBox = app.boxStore.boxFor()
+        //-----------------------------------------------------------
+        // todo: please remove later or soon, hard coded network
+        val haveNetwork = true
+        if (haveNetwork) {
+            fetchExchangeRates()
+            Log.d("test runfunction", "after runing")
+        }
+        val lastUpdated = getLastUpdatedTime()
+        updateLastUpdatedTime(lastUpdatedTextView, lastUpdated.toString())
+
+
         // Create an ArrayAdapter using the string array and a default spinner layout
         ArrayAdapter.createFromResource(
             this,
@@ -66,25 +91,31 @@ class MainActivity : AppCompatActivity() {
 
         // Set listeners for spinners to update currencies and fetch new rates
         spinnerFromCurrency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 baseCurrency = parent?.getItemAtPosition(position).toString()
                 getApiResult()
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
         spinnerToCurrency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 convertedToCurrency = parent?.getItemAtPosition(position).toString()
                 getApiResult()
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
         // Add text change listener to the first conversion EditText
@@ -102,6 +133,14 @@ class MainActivity : AppCompatActivity() {
         swapButton.setOnClickListener {
             swapCurrencies()
         }
+
+        exchangeRatesButton = findViewById(R.id.button)
+        exchangeRatesButton.setOnClickListener {
+            val intent = Intent(this, ExchangeRatesActivity::class.java)
+            startActivity(intent)
+        }
+// -----------------------------------------------------------------------------------------------------------
+
     }
 
     private fun swapCurrencies() {
@@ -111,8 +150,16 @@ class MainActivity : AppCompatActivity() {
         convertedToCurrency = temp
 
         // Update the spinners to reflect the swapped currencies
-        spinnerFromCurrency.setSelection((spinnerFromCurrency.adapter as ArrayAdapter<String>).getPosition(baseCurrency))
-        spinnerToCurrency.setSelection((spinnerToCurrency.adapter as ArrayAdapter<String>).getPosition(convertedToCurrency))
+        spinnerFromCurrency.setSelection(
+            (spinnerFromCurrency.adapter as ArrayAdapter<String>).getPosition(
+                baseCurrency
+            )
+        )
+        spinnerToCurrency.setSelection(
+            (spinnerToCurrency.adapter as ArrayAdapter<String>).getPosition(
+                convertedToCurrency
+            )
+        )
 
         // Trigger the conversion
         getApiResult()
@@ -123,14 +170,20 @@ class MainActivity : AppCompatActivity() {
             val apiUrl = "https://api.exchangerate-api.com/v4/latest/$baseCurrency"
 
             if (baseCurrency == convertedToCurrency) {
-                Toast.makeText(applicationContext, "Please pick a different currency to convert", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    applicationContext,
+                    "Please pick a different currency to convert",
+                    Toast.LENGTH_SHORT
+                ).show()
             } else {
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
                         val apiResult = URL(apiUrl).readText()
                         Log.d("API Result", apiResult) // Log the API result
                         val jsonObject = JSONObject(apiResult)
-                        conversionRate = jsonObject.getJSONObject("rates").getDouble(convertedToCurrency).toFloat()
+                        conversionRate =
+                            jsonObject.getJSONObject("rates").getDouble(convertedToCurrency)
+                                .toFloat()
                         val lastUpdated = jsonObject.getString("time_last_updated")
 
                         Log.d("Main", "$conversionRate")
@@ -138,7 +191,8 @@ class MainActivity : AppCompatActivity() {
 
                         withContext(Dispatchers.Main) {
                             if (firstConversion.text.isNotEmpty() && firstConversion.text.isNotBlank()) {
-                                val text = ((firstConversion.text.toString().toFloat()) * conversionRate).toString()
+                                val text = ((firstConversion.text.toString()
+                                    .toFloat()) * conversionRate).toString()
                                 secondConversion.setText(text)
                             } else {
                                 secondConversion.setText("")
@@ -161,4 +215,86 @@ class MainActivity : AppCompatActivity() {
         val formattedTime = sdf.format(date)
         textView.text = "Last updated at $formattedTime"
     }
+
+    private fun getLastUpdatedTime(): Long {
+        val lastUpdate = lastUpdateBox.all.maxByOrNull { it.timestamp }?.timestamp
+        return lastUpdate ?: 0
+    }
+
+//    private fun updateExchangeRates() {
+//        val exchangeRates = fetchExchangeRates()
+//        Log.d("test runfunction", "$exchangeRates")
+//        if (exchangeRates != null) {
+//            exchangeRateBox.removeAll()
+//            exchangeRateBox.put(exchangeRates)
+//
+//            val lastUpdate = LastUpdate(0, Date().time)
+//            lastUpdateBox.removeAll()
+//            lastUpdateBox.put(lastUpdate)
+//
+//            // Display a toast message to indicate success
+//            Toast.makeText(this, "Exchange rates updated successfully", Toast.LENGTH_SHORT).show()
+//
+//            // Log the saved exchange rates
+//            val savedRates = exchangeRateBox.all
+//            savedRates.forEach { exchangeRate ->
+//                println("Saved Currency: ${exchangeRate.currency}, Rate: ${exchangeRate.rate}")
+//            }
+//        } else {
+//            // Display a toast message to indicate failure
+//            Toast.makeText(this, "Failed to fetch exchange rates", Toast.LENGTH_SHORT).show()
+//        }
+//    }
+
+    private fun fetchExchangeRates() {
+        val apiUrl = "https://open.er-api.com/v6/latest/USD"
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val apiResult = URL(apiUrl).readText()
+                Log.d("API Result", apiResult) // Log the API result
+                val jsonObject = JSONObject(apiResult)
+                val allRates = jsonObject.getJSONObject("rates")
+                val lastUpdated = jsonObject.getLong("time_last_update_unix")
+
+                Log.d("apireturn", "$allRates")
+
+                val exchangeRates = mutableListOf<ExchangeRate>()
+                allRates.keys().forEach { key ->
+                    val rate = allRates.getDouble(key)
+                    exchangeRates.add(ExchangeRate(currency = key, rate = rate))
+                }
+                withContext(Dispatchers.Main) {
+                    // Update ObjectBox with new exchange rates
+                    exchangeRateBox.removeAll()
+                    exchangeRateBox.put(exchangeRates)
+
+                    // Update last updated timestamp
+                    val lastUpdate = LastUpdate(0, lastUpdated)
+                    lastUpdateBox.removeAll()
+                    lastUpdateBox.put(lastUpdate)
+
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Exchange rates updated successfully",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    // Log the saved exchange rates
+                    val savedRates = exchangeRateBox.all
+                    savedRates.forEach { exchangeRate ->
+                        println("Saved Currency: ${exchangeRate.currency}, Rate: ${exchangeRate.rate}")
+                    }
+                }
+            }
+            catch (e: Exception) {
+                Log.e("Main", "$e")
+            }
+
+
+        }
+    }
 }
+
+
+
+

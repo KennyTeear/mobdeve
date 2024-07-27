@@ -181,7 +181,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun getApiResult() {
         if (firstConversion.text.isNotEmpty() && firstConversion.text.isNotBlank()) {
-            val apiUrl = "https://api.exchangerate-api.com/v4/latest/$baseCurrency"
 
             if (baseCurrency == convertedToCurrency) {
                 Toast.makeText(
@@ -190,33 +189,34 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
             } else {
-                GlobalScope.launch(Dispatchers.IO) {
-                    try {
-                        val apiResult = URL(apiUrl).readText()
-                        Log.d("API Result", apiResult) // Log the API result
-                        val jsonObject = JSONObject(apiResult)
-                        conversionRate =
-                            jsonObject.getJSONObject("rates").getDouble(convertedToCurrency)
-                                .toFloat()
-                        val lastUpdated = jsonObject.getString("time_last_updated")
 
-                        Log.d("Main", "$conversionRate")
-                        Log.d("Main", apiResult)
+//                search for 2 currencies
+                val exchangeRates = exchangeRateBox.all
+                val curr1 = exchangeRates.find { it.currency == baseCurrency }
+                val curr2 = exchangeRates.find { it.currency == convertedToCurrency }
 
-                        withContext(Dispatchers.Main) {
-                            if (firstConversion.text.isNotEmpty() && firstConversion.text.isNotBlank()) {
-                                val text = ((firstConversion.text.toString()
-                                    .toFloat()) * conversionRate).toString()
-                                secondConversion.setText(text)
-                            } else {
-                                secondConversion.setText("")
-                            }
-//                            updateLastUpdatedTime(lastUpdatedTextView, lastUpdated)
-                        }
-                    } catch (e: Exception) {
-                        Log.e("Main", "$e")
-                    }
+                Log.d("check currency1", "$curr1")
+                var exchangeRatio = 0.0
+                if (curr1 != null && curr2 != null){
+                    exchangeRatio = curr2.rate / curr1.rate
                 }
+
+
+                if (firstConversion.text.isNotEmpty() && firstConversion.text.isNotBlank()) {
+                    val text = (
+                            (Math.round
+                                (
+                                firstConversion.text.toString().toFloat() * exchangeRatio * 100.0
+                                )/100.0
+                            ).toFloat()
+                            ).toString()
+
+                    secondConversion.setText(text)
+                }
+                else {
+                    secondConversion.setText("")
+            }
+
             }
         } else {
             secondConversion.setText("")

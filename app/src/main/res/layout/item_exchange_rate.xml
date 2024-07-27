@@ -1,14 +1,17 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="?android:attr/selectableItemBackground">
 
     <TextView
         android:id="@+id/currencyTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Currency"
-        android:textSize="18sp" />
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:id="@+id/rateTextView"
@@ -16,5 +19,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/currencyTextView"
         android:text="Rate"
-        android:textSize="16sp" />
+        android:textSize="16sp"
+        android:textColor="@android:color/darker_gray" />
 </RelativeLayout>

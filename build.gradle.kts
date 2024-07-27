@@ -14,7 +14,7 @@ buildscript {
 
     dependencies {
         // Android Gradle Plugin 4.1.0 or later supported.
-        classpath("com.android.tools.build:gradle:8.1.0")
+        classpath("com.android.tools.build:gradle:8.4.1")
         classpath("io.objectbox:objectbox-gradle-plugin:$objectboxVersion")
     }
 }

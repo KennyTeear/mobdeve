@@ -4,8 +4,34 @@
     android:layout_height="match_parent"
     tools:context=".ExchangeRatesActivity">
 
+    <TextView
+        android:id="@+id/currentCurrencyTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Current Currency: USD"
+        android:textSize="18sp"
+        android:layout_margin="16dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:textStyle="bold" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        android:layout_below="@id/currentCurrencyTextView"
+        android:layout_above="@id/lastUpdatedTextView"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/lastUpdatedTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Last updated at: "
+        android:textSize="14sp"
+        android:layout_margin="16dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
+
 </RelativeLayout>

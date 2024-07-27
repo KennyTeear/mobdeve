@@ -89,6 +89,10 @@ class MainActivity : AppCompatActivity() {
             spinnerToCurrency.adapter = adapter
         }
 
+        // Set initial spinner selections
+        spinnerFromCurrency.setSelection((spinnerFromCurrency.adapter as ArrayAdapter<String>).getPosition("USD"))
+        spinnerToCurrency.setSelection((spinnerToCurrency.adapter as ArrayAdapter<String>).getPosition("EUR"))
+
         // Set listeners for spinners to update currencies and fetch new rates
         spinnerFromCurrency.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
